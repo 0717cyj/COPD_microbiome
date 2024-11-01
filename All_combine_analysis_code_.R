@@ -43,58 +43,6 @@ PT <- read_excel('./0_PT_PROFILE/PT_CODE.xlsx')
 # OTU = otu_table(openxlsx::read.xlsx("./microbiome_marker/otu_table.xlsx"), taxa_are_rows = TRUE) 
 OTU = otu_table(openxlsx::read.xlsx("./microbiome_marker/otu_table.xlsx",rowNames = T)%>% t() %>% as.data.frame()%>% rownames_to_column("SampleName") %>% left_join(PT) %>% mutate(SampleName=NULL) %>% column_to_rownames("PTCODE") %>% t(),taxa_are_rows = TRUE) 
 TAX = tax_table(as.matrix(openxlsx::read.xlsx("./microbiome_marker/tax_table.xlsx",rowNames = T)))
-samples = merged_data %>% mutate(SampleName=gsub("_","\\-",SAMPLE_NO)) %>% left_join(PT)
-rownames(samples) <-samples$PTCODE
-samples = sample_data(samples)
-copd_micro_phyloseq <- phyloseq(OTU, TAX, samples)
-sample_data(copd_micro_phyloseq)
-
-median(sample_sums(copd_micro_phyloseq))
-max(sample_sums(copd_micro_phyloseq))
-min(sample_sums(copd_micro_phyloseq))
-
-# 10045778-2 부적합검체로 제거
-# copd_micro_phyloseq_inclusion <- subset_samples(copd_micro_phyloseq, SAMPLE_NO !="10045778_2")
-copd_micro_phyloseq_inclusion <-copd_micro_phyloseq
-median(sample_sums(copd_micro_phyloseq_inclusion))
-max(sample_sums(copd_micro_phyloseq_inclusion))
-min(sample_sums(copd_micro_phyloseq_inclusion))
-
-
-# total = median(sample_sums(copd_micro_phyloseq_inclusion))
-# standf = function(x, t=total) round(t * (x / sum(x)))
-# copd_micro_phyloseq_inclusion_NM = transform_sample_counts(copd_micro_phyloseq_inclusion, standf)
-# copd_micro_phyloseq_inclusion_abund_fraction <- merge_samples(copd_micro_phyloseq_inclusion, "GROUP_SAMPLE")
-# copd_micro_phyloseq_inclusion_abund_fraction <- merge_samples(copd_micro_phyloseq_inclusion, "COPD_stage_Group")
-# copd_micro_phyloseq_inclusion_abund_fraction <- merge_samples(copd_micro_phyloseq_inclusion, "AgeGroup")
-
-copd_micro_phyloseq_inclusion_abund_fraction <- transform_sample_counts(copd_micro_phyloseq_inclusion_abund_fraction, function(x) 100 * x / sum(x))
-sample_data(copd_micro_phyloseq_inclusion)
-
-
-##GENUS
-genus_abundance <- data.frame(FREQ=taxa_sums(copd_micro_phyloseq_inclusion),ASV=names(taxa_sums(copd_micro_phyloseq_inclusion))) %>% left_join(data.frame(tax_table(copd_micro_phyloseq_inclusion),ASV=row.names(data.frame(tax_table(copd_micro_phyloseq_inclusion)))))
-
-
-top20_genera <- (genus_abundance %>% group_by(Genus)%>%summarise(Sum_GENUS=sum(FREQ)) %>% arrange(desc(Sum_GENUS)) %>% slice(1:20))$Genus
-
-top30_species <- (genus_abundance %>% group_by(Species)%>%summarise(Sum_Species=sum(FREQ)) %>% arrange(desc(Sum_Species)) %>% slice(1:30))$Species
-
-copd_micro_phyloseq_inclusion_abund_fraction_top_20 <- copd_micro_phyloseq_inclusion_abund_fraction
-tax_table(copd_micro_phyloseq_inclusion_abund_fraction_top_20) <- tax_table(copd_micro_phyloseq_inclusion_abund_fraction_top_20) %>%
-  as.data.frame() %>%
-  mutate(Genus = ifelse(Genus %in% top20_genera, Genus, "Others"),
-         Genus = factor(Genus,levels=c(setdiff(Genus, "Others"),"Others"))) %>%
-  as.matrix()
-
-
-copd_micro_phyloseq_inclusion_abund_fraction_top_30_species <- copd_micro_phyloseq_inclusion_abund_fraction
-tax_table(copd_micro_phyloseq_inclusion_abund_fraction_top_30_species) <- tax_table(copd_micro_phyloseq_inclusion_abund_fraction_top_30_species) %>%
-  as.data.frame() %>%
-  mutate(Species = ifelse(Species %in% top30_species, Species, "Others"),
-         Species = factor(Species,levels=c(setdiff(Species, "Others"),"Others"))) %>%
-  as.matrix()
-
 
 color_palette <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628",
                    "#F781BF", "#999999", "#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
@@ -139,20 +87,7 @@ dev.off()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-##################### By PATIENTS ############
+#################### By PATIENTS ############
 copd_micro_phyloseq_abund_fraction <- copd_micro_phyloseq
 sample_names(copd_micro_phyloseq_abund_fraction) <-  as.data.frame(sample_data(copd_micro_phyloseq_abund_fraction))$PTCODE
 
@@ -161,10 +96,7 @@ copd_micro_phyloseq_abund_fraction <- transform_sample_counts(copd_micro_phylose
 
 ##GENUS
 genus_abundance <- data.frame(FREQ=taxa_sums(copd_micro_phyloseq),ASV=names(taxa_sums(copd_micro_phyloseq))) %>% left_join(data.frame(tax_table(copd_micro_phyloseq),ASV=row.names(data.frame(tax_table(copd_micro_phyloseq)))))
-
-
 top20_genera <- (genus_abundance %>% group_by(Genus)%>%summarise(Sum_GENUS=sum(FREQ)) %>% arrange(desc(Sum_GENUS)) %>% slice(1:20))$Genus
-
 top30_species <- (genus_abundance %>% group_by(Species)%>%summarise(Sum_Species=sum(FREQ)) %>% arrange(desc(Sum_Species)) %>% slice(1:30))$Species
 
 copd_micro_phyloseq_abund_fraction_top_20 <- copd_micro_phyloseq_abund_fraction
@@ -208,13 +140,10 @@ Phylum_all+Genus_all+Species_all+plot_layout(ncol = 1)
 dev.off()
 
 
-sample_data(copd_micro_phyloseq)
+############### Alpha diversity ##########################
 
-shannon_data$Antibiotics_Use
-
-
+                                                              
 shannon_data<- 
-  # openxlsx::read.xlsx("./microbiome_marker/shannon.xlsx",rowNames = F) %>%
   estimate_richness(copd_micro_phyloseq, split = TRUE, measures = NULL) %>%
   mutate(SampleName=gsub("X", "",row.names(.)),
          SampleName=gsub("\\.", "-",SampleName)) %>% 
